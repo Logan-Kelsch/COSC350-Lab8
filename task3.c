@@ -16,28 +16,30 @@
 #include <unistd.h>
 
 //error output function
-void err_sys(char *str){
-	printf("%s",str);
+void err_sys(char *str, int num){
+	printf("%s %d\n",str, num);
 	exit(1);
 }
 
+
+
 void Bye(void *arg){
-	pthread_t *tid_orig = (pthread_t*)arg;
+	pthread_t tid_orig = (pthread_t)arg;
 	sleep(1);
 	printf("BYE!\n");
-	pthread_cancel(*tid_orig);
+	pthread_cancel(tid_orig);
 	pthread_exit(NULL);
 }
 
 void Bye1(){
 	sleep(1);
 	printf("END OF PROGRAM\n");
-	pthread_exit(NULL);
+	exit(0);
 }
 
 void *thread1(void *arg){
-	pthread_t *tid_orig = (pthread_t*)arg;
-	pthread_cleanup_push(Bye, tid_orig);
+	pthread_t tid_orig = (pthread_t)arg;
+	pthread_cleanup_push(Bye, (void *)tid_orig);
 	while(1){
 		printf("In the first thread\n");
 		sleep(1);
@@ -48,11 +50,11 @@ void *thread1(void *arg){
 }
 
 void *thread2(void *arg){
-	pthread_t *tid_1 = (pthread_t*)arg;
+	pthread_t tid_1 = (pthread_t)arg;
 	int iter = 0;
 	while (1){
 		if(iter==10){
-			pthread_cancel(*tid_1);
+			pthread_cancel(tid_1);
 			break;
 		}
 		printf("In the second thread\n");
@@ -67,9 +69,12 @@ int main(){
 	pthread_t self = pthread_self();
 	pthread_t t1, t2;
 	int rc;
-	pthread_create(&t1, NULL, thread1, &self);
-	pthread_create(&t2, NULL, thread2, &t1);
-
+	rc = pthread_create(&t1, NULL, thread1, (void *)self);
+	if(rc)
+		err_sys("ERROR; Return code for pthread_create() is %d\n",rc);
+	rc = pthread_create(&t2, NULL, thread2, (void *)t1);
+	if(rc)
+		err_sys("ERROR; Return code for pthread_create() is %d\n",rc);
 	pthread_cleanup_push(Bye1, NULL);
 	while(1){
 		printf("In the original thread\n");

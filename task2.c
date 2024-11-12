@@ -17,8 +17,6 @@
 #include <pthread.h>
 #include <unistd.h>
 
-#define BUFFER_SIZE 3
-
 int *arr;
 int length;
 
@@ -28,9 +26,30 @@ typedef struct {
 } CLdata;
 
 //error output function
-void err_sys(char *str){
-	printf("%s",str);
+void err_sys(char *str, int num){
+	printf("%s %d\n",str, num);
 	exit(1);
+}
+
+void arrPrint(){
+	for(int i = 0; i < length; i++){
+		printf("arr[%d]==%d\n",i,arr[i]);
+	}
+}
+
+void arrSort(){
+	int min = 0;
+	int swpTmp = 0;
+	for(int i = 0; i < length; i++){
+		min = i;
+		for(int j = i+1; j < length; j++){
+			if(arr[j]<arr[min])
+				min=j;
+		}
+		swpTmp = arr[i];
+		arr[i] = arr[min];
+		arr[min] = swpTmp;
+	}
 }
 
 //first thread function\
@@ -42,6 +61,10 @@ void *t1_func(void *arg){
 		arr[i] = atoi(data->arg_v[i]);
 	length = data->arg_c;
 	printf("Score data gathered.\n");
+	arrPrint();
+	arrSort();
+	printf("Score data sorted.\n");
+	arrPrint();
 	pthread_exit(NULL);
 }
 
@@ -88,8 +111,14 @@ void *t4_func(void *null){
 
 	pthread_t t2_2, t3_2;
 
-	pthread_create(&t2_2, NULL, t2_func, NULL);
-	pthread_create(&t3_2, NULL, t3_func, NULL);
+	int rc;
+
+	rc = pthread_create(&t2_2, NULL, t2_func, NULL);
+	if (rc)
+		err_sys("ERROR; return code for pthread_create() is %d\n",rc);
+	rc = pthread_create(&t3_2, NULL, t3_func, NULL);
+	if (rc)
+		err_sys("ERROR; return code for pthread_create() is %d\n",rc);
 	pthread_join(t2_2, NULL);
 	pthread_join(t3_2, NULL);
 
@@ -99,7 +128,7 @@ void *t4_func(void *null){
 int main(int argc, char *argv[]){
 	//command line validation
 	if(argc<2)
-		err_sys("COMMAND LINE ERROR\n");
+		err_sys("COMMAND LINE ERROR\n",0);
 	
 	//turning command line data into a struct-mobile
 	CLdata cl;

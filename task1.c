@@ -15,8 +15,8 @@ typedef struct {
 } Data;
 
 //error output function
-void err_sys(char *str){
-	printf("%s",str);
+void err_sys(char *str, int num){
+	printf("%s %d\n",str, num);
 	exit(1);
 }
 
@@ -47,7 +47,7 @@ void *t2_fact(void *sum){
 int main(int argc, char *argv[]){
 	//command line validation
 	if(argc<2)
-		err_sys("COMMAND LINE ERROR\n");
+		err_sys("COMMAND LINE ERROR\n", 0);
 
 	//thread declaration
 	pthread_t t1, t2;
@@ -63,12 +63,18 @@ int main(int argc, char *argv[]){
 	//variablue used for join
 	int *passedValue = malloc(sizeof(int));
 	*passedValue = 0;
+	
+	int rc;
 
-	pthread_create(&t1, NULL, t1_sum, (void *)&data);
+	rc = pthread_create(&t1, NULL, t1_sum, (void *)&data);
+	if(rc)
+		err_sys("ERROR; Return code from pthread_create() is %d\n",rc);
 	pthread_join(t1, (void **)&passedValue);
 	printf("Sum from Main:\t\t%d\n",*passedValue);
 	
-	pthread_create(&t2, NULL, t2_fact, (void *)passedValue);
+	rc = pthread_create(&t2, NULL, t2_fact, (void *)passedValue);
+	if (rc)
+		err_sys("ERROR; Return code from pthread_create() is %d\n",rc);
 	pthread_join(t2, (void **)&passedValue);
 	printf("Factorial from Main:\t%d\n",*passedValue);
 	
